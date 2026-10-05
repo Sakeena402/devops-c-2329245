@@ -1,0 +1,206 @@
+==================================================
+1. GIT SETUP AND GITHUB
+==================================================
+
+git init -b main
+# Initializes the local Git repository on the main branch.
+
+git status
+# Checks the working tree status before staging initial files.
+
+git status --ignored
+# Verifies that the evidence/ directory is properly excluded by .gitignore.
+
+git add .gitignore site/
+# Stages .gitignore and the initial site/ files.
+
+git commit -m "Initial commit with book catalogue"
+# Creates the initial commit containing the catalogue with three books and seat number.
+
+Invoke-RestMethod -Uri "https://api.github.com/user/repos" -Method Post -Body '{"name":"devops-c-2329245","private":false}'
+# Creates the public GitHub repository named devops-c-2329245 via GitHub REST API.
+
+git remote add origin https://github.com/Sakeena402/devops-c-2329245.git
+# Connects the local repository to the remote GitHub repository.
+
+git branch -M main
+# Ensures the primary branch is named main.
+
+git push -u origin main
+# Pushes the initial commit to the remote main branch.
+
+==================================================
+2. BRANCH AND MERGE
+==================================================
+
+git checkout -b update-content
+# Creates and checks out a new branch named update-content.
+
+git add site/index.html
+# Stages the updated index.html with the fourth book title.
+
+git commit -m "Add fourth book title to catalogue"
+# Commits the fourth book to the update-content branch.
+
+git checkout main
+# Switches back to the main branch.
+
+git merge update-content --no-ff -m "Merge branch 'update-content' into main"
+# Merges update-content into main, creating a clear merge commit.
+
+git push origin main
+# Pushes the updated main branch to GitHub.
+
+git push -u origin update-content
+# Pushes the update-content branch to GitHub for examiner verification.
+
+git log --graph --oneline --all
+# Verifies commit history showing initial commit, update-content commit, and merge commit.
+
+git branch -a
+# Verifies that both main and update-content branches exist locally and on the remote.
+
+==================================================
+3. GITHUB PAGES
+==================================================
+
+Invoke-RestMethod -Uri "https://api.github.com/repos/Sakeena402/devops-c-2329245/pages" -Method Post -Body '{"build_type":"workflow"}'
+# Configures repository GitHub Pages source build type to GitHub Actions workflow.
+
+git add .github/workflows/pages.yml
+# Stages the GitHub Actions Pages workflow file.
+
+git commit -m "Add GitHub Pages workflow"
+# Commits the GitHub Pages workflow file to main.
+
+git push origin main
+# Pushes the workflow file to GitHub to trigger the automated deployment.
+
+Invoke-RestMethod -Uri "https://api.github.com/repos/Sakeena402/devops-c-2329245/actions/runs"
+# Monitors GitHub Actions workflow runs until the first deployment succeeds.
+
+Invoke-WebRequest -Uri "https://sakeena402.github.io/devops-c-2329245/" -UseBasicParsing
+# Verifies the live GitHub Pages website displays the initial catalogue and seat number.
+
+git add site/index.html
+# Stages index.html with the updated heading 'College Book Catalogue - Updated'.
+
+git commit -m "Update catalogue heading to College Book Catalogue - Updated"
+# Commits the updated heading on main.
+
+git push origin main
+# Pushes the heading update to main to trigger the second Pages deployment workflow.
+
+Invoke-RestMethod -Uri "https://api.github.com/repos/Sakeena402/devops-c-2329245/actions/runs"
+# Monitors the second GitHub Actions workflow run until completion and success.
+
+Invoke-WebRequest -Uri "https://sakeena402.github.io/devops-c-2329245/" -UseBasicParsing -Headers @{ "Cache-Control" = "no-cache" }
+# Verifies that the updated heading is live and visible at the GitHub Pages URL.
+
+==================================================
+4. DOCKER
+==================================================
+
+docker build -t devops-c-2329245:v1 .
+# Builds the Docker image devops-c-2329245:v1 using nginx:alpine serving site/.
+
+docker run -d --name devops-c-2329245 -p 8080:80 devops-c-2329245:v1
+# Runs a background container named devops-c-2329245 mapping host port 8080 to container port 80.
+
+docker images devops-c-2329245:v1
+# Verifies the Docker image exists locally.
+
+docker ps --filter "name=devops-c-2329245"
+# Verifies the container devops-c-2329245 is running and healthy.
+
+Invoke-WebRequest -Uri "http://localhost:8080" -UseBasicParsing
+# Verifies that the website is accessible on localhost:8080 with identical content.
+
+==================================================
+5. MINIKUBE
+==================================================
+
+minikube status
+# Checks the initial status of the Minikube cluster.
+
+minikube start --driver=docker
+# Starts the Minikube cluster using the Docker driver.
+
+minikube image load devops-c-2329245:v1
+# Loads the locally built Docker image into Minikube without Docker Hub.
+
+minikube image ls
+# Verifies that devops-c-2329245:v1 is available inside the Minikube node.
+
+==================================================
+6. KUBERNETES DEPLOYMENT
+==================================================
+
+kubectl apply -f deployment.yaml
+# Applies the Deployment devops-c-2329245 with 1 initial replica.
+
+kubectl rollout status deployment/devops-c-2329245
+# Waits for the Deployment rollout to complete successfully.
+
+kubectl get deployment devops-c-2329245
+# Verifies the Deployment shows 1/1 ready.
+
+kubectl get pods -l app=devops-c-2329245
+# Verifies exactly one Ready Pod is Running.
+
+==================================================
+7. KUBERNETES SERVICE
+==================================================
+
+kubectl apply -f service.yaml
+# Applies the NodePort Service devops-c-2329245 targeting port 80.
+
+kubectl get svc devops-c-2329245
+# Verifies the NodePort Service exists and lists port mappings.
+
+minikube service devops-c-2329245 --url
+# Retrieves the accessible local URL/tunnel for the NodePort Service.
+
+Invoke-WebRequest -Uri "http://127.0.0.1:57895" -UseBasicParsing
+# Verifies the website is accessible via the Kubernetes Service with matching content.
+
+==================================================
+8. SCALING
+==================================================
+
+kubectl scale deployment devops-c-2329245 --replicas=2
+# Scales the Deployment from 1 replica to 2 replicas.
+
+kubectl rollout status deployment/devops-c-2329245
+# Waits for the scaled Deployment rollout to complete.
+
+kubectl get deployment devops-c-2329245
+# Verifies the Deployment shows 2/2 ready.
+
+kubectl get pods -l app=devops-c-2329245
+# Verifies two Pods are Ready and Running.
+
+Invoke-WebRequest -Uri "http://127.0.0.1:57895" -UseBasicParsing
+# Verifies that the Service continues to work and serve content after scaling.
+
+==================================================
+9. VERIFICATION
+==================================================
+
+git status
+# Confirms working directory is clean.
+
+git status --ignored
+# Verifies evidence/ is completely ignored by Git.
+
+git log --graph --oneline --all
+# Shows complete Git commit and merge history.
+
+docker ps --filter "name=devops-c-2329245"
+# Verifies Docker container remains running at completion.
+
+kubectl get deployment,pods,svc -l app=devops-c-2329245
+# Verifies Kubernetes Deployment, Pods (2/2), and Service remain running.
+
+Get-ChildItem evidence
+# Confirms all 21 numbered evidence files exist in evidence/.
